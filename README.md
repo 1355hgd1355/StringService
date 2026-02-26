@@ -10,7 +10,7 @@
 4. Подключитесь к базе данных (используемый пароль - "database")
 5. Через командную строку (Windows) выполните следующюю команду, предварительно перейдя в папку с приложением:
 
-` .\mvnw.cmd spring-boot:run `
+``` .\mvnw.cmd spring-boot:run ```
 
 # Как использовать?
 
@@ -22,4 +22,4 @@ curl -X POST http://localhost:8080/api/strings ^
 ```
 
 ### GET-запрос
-` curl http://localhost:8080/api/strings/1 `
+``` curl http://localhost:8080/api/strings/1 ```
