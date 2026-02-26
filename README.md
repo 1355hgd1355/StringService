@@ -1,10 +1,8 @@
 # Добро пожаловать!
----
 
 Это приложение для осуществления POST и GET запросов.
 
 # Как запустить?
----
 
 1. Убедитесь, что у вас установлены JDK 17 и PostgreSQL.
 2. Склонируйте данное приложение.
@@ -12,16 +10,16 @@
 4. Подключитесь к базе данных (используемый пароль - "database")
 5. Через командную строку (Windows) выполните следующюю команду, предварительно перейдя в папку с приложением:
 
-''' .\mvnw.cmd spring-boot:run '''
+` .\mvnw.cmd spring-boot:run `
 
 # Как использовать?
 
 ### POST-запрос
-'''
+```
 curl -X POST http://localhost:8080/api/strings ^
   -H "Content-Type: application/json" ^
   -d "{\"data\": \"Привет!\"}"
-'''
+```
 
 ### GET-запрос
-''' curl http://localhost:8080/api/strings/1 '''
+` curl http://localhost:8080/api/strings/1 `
