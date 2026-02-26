@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/strings")
@@ -49,8 +50,8 @@ public class StringController {
     
     @GetMapping("/{id}")
     public ResponseEntity<StringEntity> getString(@PathVariable Long id) {
-        return stringService.getStringById(id)
-                .map(ResponseEntity::ok)
+       Optional<StringEntity> stringEntity = stringService.getStringById(id);
+        return stringEntity.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 }

@@ -1,0 +1,5 @@
+com\example\stringservice\controller\StringController.class
+com\example\stringservice\repository\StringRepository.class
+com\example\stringservice\model\StringEntity.class
+com\example\stringservice\service\StringService.class
+com\example\stringservice\StringServiceApplication.class

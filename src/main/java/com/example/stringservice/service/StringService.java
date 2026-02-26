@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 public class StringService {
@@ -26,6 +27,10 @@ public class StringService {
         stringEntity.setReceivedTime(LocalDateTime.now());
         
         return stringRepository.save(stringEntity);
+    }
+
+    public Optional<StringEntity> getStringById(Long id) {
+        return stringRepository.findById(id);
     }
     
     private String determineDataType(String data) {
