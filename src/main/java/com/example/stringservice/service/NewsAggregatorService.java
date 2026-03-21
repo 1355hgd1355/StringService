@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class NewsAggregatorService {
@@ -39,8 +38,6 @@ public class NewsAggregatorService {
     @Autowired
     private UserSourceRepository userSourceRepository;
     
-    @Autowired
-    private UserTagRepository userTagRepository;
     
     /**
      * Планировщик сканирования новостей

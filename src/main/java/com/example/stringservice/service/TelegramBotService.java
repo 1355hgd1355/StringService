@@ -8,14 +8,11 @@ import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import jakarta.annotation.PostConstruct;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
@@ -83,6 +80,8 @@ public class TelegramBotService extends TelegramLongPollingBot {
             newUser.setLastName(update.getMessage().getFrom().getLastName());
             newUser.setRegisteredAt(LocalDateTime.now());
             newUser.setIsActive(true);
+            newUser.setScanIntervalMinutes(60);
+            newUser.setNewsCount(5);
             
             userRepository.save(newUser);
             
@@ -132,9 +131,11 @@ public class TelegramBotService extends TelegramLongPollingBot {
     
     private void showSourcesMenu(Long chatId) {
         List<NewsSource> sources = sourceRepository.findAll();
-        TgUser user = userRepository.findByChatId(chatId).orElse(null);
+        Optional<TgUser> userOpt = userRepository.findByChatId(chatId);
         
-        if (user == null) return;
+        if (userOpt.isEmpty()) return;
+        
+        TgUser user = userOpt.get();
         
         StringBuilder message = new StringBuilder("📰 *Доступные источники:*\n\n");
         
@@ -152,10 +153,11 @@ public class TelegramBotService extends TelegramLongPollingBot {
     
     private void showTagsMenu(Long chatId) {
         List<Tag> allTags = tagRepository.findAll();
-        TgUser user = userRepository.findByChatId(chatId).orElse(null);
+        Optional<TgUser> userOpt = userRepository.findByChatId(chatId);
         
-        if (user == null) return;
+        if (userOpt.isEmpty()) return;
         
+        TgUser user = userOpt.get();
         List<Tag> userTags = tagRepository.findByUserId(user.getId());
         
         StringBuilder message = new StringBuilder("🏷 *Ваши теги:*\n\n");
@@ -184,9 +186,11 @@ public class TelegramBotService extends TelegramLongPollingBot {
     }
     
     private void showSettingsMenu(Long chatId) {
-        TgUser user = userRepository.findByChatId(chatId).orElse(null);
+        Optional<TgUser> userOpt = userRepository.findByChatId(chatId);
         
-        if (user == null) return;
+        if (userOpt.isEmpty()) return;
+        
+        TgUser user = userOpt.get();
         
         String settings = "⚙️ *Настройки*\n\n" +
                 "Интервал сканирования: " + user.getScanIntervalMinutes() + " минут\n" +
@@ -216,9 +220,11 @@ public class TelegramBotService extends TelegramLongPollingBot {
     
     private void handleMessage(Long chatId, String message) {
         message = message.toLowerCase().trim();
-        TgUser user = userRepository.findByChatId(chatId).orElse(null);
+        Optional<TgUser> userOpt = userRepository.findByChatId(chatId);
         
-        if (user == null) return;
+        if (userOpt.isEmpty()) return;
+        
+        TgUser user = userOpt.get();
         
         if (message.startsWith("включить ")) {
             enableSource(chatId, message.substring(9).trim(), user);
@@ -298,7 +304,7 @@ public class TelegramBotService extends TelegramLongPollingBot {
     }
     
     private void createNewTag(Long chatId, String tagName, TgUser user) {
-        if (tagRepository.findByNameIgnoreCase(tagName).isPresent()) {
+        if (tagRepository.existsByNameIgnoreCase(tagName)) {
             sendText(chatId, "Тег \"" + tagName + "\" уже существует");
             return;
         }
@@ -308,7 +314,6 @@ public class TelegramBotService extends TelegramLongPollingBot {
         newTag.setCreatedAt(LocalDateTime.now());
         tagRepository.save(newTag);
         
-        // Сразу добавляем пользователю
         UserTag userTag = new UserTag();
         userTag.setUser(user);
         userTag.setTag(newTag);
@@ -359,17 +364,18 @@ public class TelegramBotService extends TelegramLongPollingBot {
         try {
             execute(message);
         } catch (TelegramApiException e) {
-            e.printStackTrace();
+            System.err.println("Ошибка отправки сообщения: " + e.getMessage());
         }
     }
     
     @PostConstruct
     public void init() {
-        // Добавляем тестовые источники и теги при первом запуске
+        // Добавляем тестовые источники при первом запуске
         if (sourceRepository.count() == 0) {
             addSampleSources();
         }
         
+        // Добавляем тестовые теги при первом запуске
         if (tagRepository.count() == 0) {
             addSampleTags();
         }
@@ -377,9 +383,9 @@ public class TelegramBotService extends TelegramLongPollingBot {
     
     private void addSampleSources() {
         List<NewsSource> sources = List.of(
-            createSource("Lenta.ru", "https://lenta.ru/rss", "RSS"),
+            createSource("Lenta.ru", "https://lenta.ru/rss/news", "RSS"),
+            createSource("Аргументы и Факты", "https://aif.ru/rss/news.php", "RSS"),
             createSource("РИА Новости", "https://ria.ru/export/rss2/index.xml", "RSS"),
-            createSource("TJournal", "https://tjournal.ru/rss", "RSS"),
             createSource("Habr", "https://habr.com/ru/rss/all/", "RSS"),
             createSource("BBC Russian", "http://feeds.bbci.co.uk/russian/news/rss.xml", "RSS")
         );
@@ -406,7 +412,9 @@ public class TelegramBotService extends TelegramLongPollingBot {
             createTag("Наука"),
             createTag("Политика"),
             createTag("Экономика"),
-            createTag("Спорт")
+            createTag("Спорт"),
+            createTag("Программирование"),
+            createTag("Искусственный интеллект")
         );
         
         tagRepository.saveAll(tags);
@@ -432,18 +440,22 @@ public class TelegramBotService extends TelegramLongPollingBot {
         }
         
         message.append("\n\n*").append(news.getTitle()).append("*\n\n");
-        message.append(news.getContent() != null ? 
-                      (news.getContent().length() > 200 ? 
-                       news.getContent().substring(0, 200) + "..." : 
-                       news.getContent()) : "");
-        message.append("\n\n🔗 [Читать далее](").append(news.getLink()).append(")");
+        
+        if (news.getContent() != null && !news.getContent().isEmpty()) {
+            String content = news.getContent().replaceAll("<[^>]*>", "");
+            if (content.length() > 300) {
+                content = content.substring(0, 300) + "...";
+            }
+            message.append(content).append("\n\n");
+        }
+        
+        message.append("🔗 [Читать далее](").append(news.getLink()).append(")");
         
         sendText(chatId, message.toString());
     }
     
     private String formatDate(LocalDateTime date) {
-        java.time.format.DateTimeFormatter formatter = 
-            java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
         return date.format(formatter);
     }
 }
