@@ -1,6 +1,7 @@
 com\example\stringservice\repository\NewsSourceRepository.class
 com\example\stringservice\repository\NewsItemRepository.class
 com\example\stringservice\model\Tag.class
+com\example\stringservice\config\TelegramBotConfig.class
 com\example\stringservice\repository\UserSourceRepository.class
 com\example\stringservice\repository\TgUserRepository.class
 com\example\stringservice\bot\TelegramBot.class
@@ -25,5 +26,6 @@ com\example\stringservice\model\UserTag.class
 com\example\stringservice\model\UserTagId.class
 com\example\stringservice\service\RssParserService.class
 com\example\stringservice\model\TgUser.class
+com\example\stringservice\config\AsyncConfig.class
 com\example\stringservice\model\SentNotification.class
 com\example\stringservice\service\NewsAggregatorService.class

@@ -103,13 +103,20 @@ public class TelegramBotService extends TelegramLongPollingBot {
     }
     
     private void handleCommand(Long chatId, String command) {
+        System.out.println("Обработка команды: " + command);
+        
         switch (command) {
             case "/start":
-                sendText(chatId, "Бот уже работает! Используйте /help для списка команд.");
+                sendWelcomeMessage(chatId);
                 break;
                 
             case "/sources":
                 showSourcesMenu(chatId);
+                break;
+                
+            case "/enabled":
+            case "/my_sources":
+                showEnabledSources(chatId);
                 break;
                 
             case "/tags":
@@ -129,6 +136,27 @@ public class TelegramBotService extends TelegramLongPollingBot {
         }
     }
     
+    private void showEnabledSources(Long chatId) {
+        Optional<TgUser> userOpt = userRepository.findByChatId(chatId);
+        
+        if (userOpt.isEmpty()) return;
+        
+        TgUser user = userOpt.get();
+        List<NewsSource> enabledSources = userSourceRepository.findEnabledSourcesByUserId(user.getId());
+        
+        if (enabledSources.isEmpty()) {
+            sendText(chatId, "📭 У вас нет включённых источников.\n\nИспользуйте `/sources` чтобы включить источники.");
+            return;
+        }
+        
+        StringBuilder message = new StringBuilder("✅ *Ваши включённые источники:*\n\n");
+        for (NewsSource source : enabledSources) {
+            message.append("• ").append(source.getName()).append("\n");
+        }
+        
+        sendText(chatId, message.toString());
+    }
+
     private void showSourcesMenu(Long chatId) {
         List<NewsSource> sources = sourceRepository.findAll();
         Optional<TgUser> userOpt = userRepository.findByChatId(chatId);
@@ -140,13 +168,20 @@ public class TelegramBotService extends TelegramLongPollingBot {
         StringBuilder message = new StringBuilder("📰 *Доступные источники:*\n\n");
         
         for (NewsSource source : sources) {
+            // Проверяем, включен ли источник для этого пользователя
             boolean isEnabled = userSourceRepository.existsByUserIdAndSourceIdAndIsEnabledTrue(user.getId(), source.getId());
+            
+            // Добавляем эмодзи статуса
             String status = isEnabled ? "✅" : "❌";
-            message.append(status).append(" ").append(source.getName()).append("\n");
+            
+            message.append(status).append(" *").append(source.getName()).append("*\n");
         }
         
-        message.append("\nЧтобы включить/выключить источник, отправьте:\n");
-        message.append("`включить Название` или `выключить Название`");
+        message.append("\n---\n");
+        message.append("*Управление:*\n");
+        message.append("`включить Название` - включить источник\n");
+        message.append("`выключить Название` - выключить источник\n");
+        message.append("\n*Пример:* `включить Lenta.ru`");
         
         sendText(chatId, message.toString());
     }
@@ -210,7 +245,9 @@ public class TelegramBotService extends TelegramLongPollingBot {
                 "3. Настройте интервал сканирования (/settings)\n\n" +
                 "Бот будет автоматически проверять новости и присылать вам те, где встречаются ваши теги.\n\n" +
                 "*Команды:*\n" +
+                "/start - начать работу\n" +
                 "/sources - управление источниками\n" +
+                "/my_sources - показать включённые источники\n" +
                 "/tags - управление тегами\n" +
                 "/settings - настройки\n" +
                 "/help - эта справка";
@@ -246,27 +283,60 @@ public class TelegramBotService extends TelegramLongPollingBot {
     }
     
     private void enableSource(Long chatId, String sourceName, TgUser user) {
-        Optional<NewsSource> source = sourceRepository.findByNameIgnoreCase(sourceName);
+        Optional<NewsSource> sourceOpt = sourceRepository.findByNameIgnoreCase(sourceName);
         
-        if (source.isEmpty()) {
-            sendText(chatId, "Источник \"" + sourceName + "\" не найден");
+        if (sourceOpt.isEmpty()) {
+            sendText(chatId, "❌ Источник \"" + sourceName + "\" не найден\n\nДоступные источники:\n" + getSourcesList());
             return;
         }
         
-        userSourceRepository.enableSource(user.getId(), source.get().getId());
-        sendText(chatId, "✅ Источник \"" + source.get().getName() + "\" включён");
+        NewsSource source = sourceOpt.get();
+        
+        try {
+            // Используем исправленный метод enableSourceNative
+            userSourceRepository.enableSourceNative(user.getId(), source.getId());
+            
+            sendText(chatId, "✅ Источник \"" + source.getName() + "\" успешно включён");
+            
+            // Показываем обновлённый список
+            showSourcesMenu(chatId);
+        } catch (Exception e) {
+            sendText(chatId, "❌ Ошибка при включении источника: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
-    
+
     private void disableSource(Long chatId, String sourceName, TgUser user) {
-        Optional<NewsSource> source = sourceRepository.findByNameIgnoreCase(sourceName);
+        Optional<NewsSource> sourceOpt = sourceRepository.findByNameIgnoreCase(sourceName);
         
-        if (source.isEmpty()) {
-            sendText(chatId, "Источник \"" + sourceName + "\" не найден");
+        if (sourceOpt.isEmpty()) {
+            sendText(chatId, "❌ Источник \"" + sourceName + "\" не найден\n\nДоступные источники:\n" + getSourcesList());
             return;
         }
         
-        userSourceRepository.disableSource(user.getId(), source.get().getId());
-        sendText(chatId, "❌ Источник \"" + source.get().getName() + "\" выключён");
+        NewsSource source = sourceOpt.get();
+        
+        try {
+            // Обновляем статус
+            userSourceRepository.disableSource(user.getId(), source.getId());
+            
+            sendText(chatId, "❌ Источник \"" + source.getName() + "\" успешно выключен");
+            
+            // Показываем обновлённый список
+            showSourcesMenu(chatId);
+        } catch (Exception e) {
+            sendText(chatId, "❌ Ошибка при выключении источника: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private String getSourcesList() {
+        List<NewsSource> sources = sourceRepository.findAll();
+        StringBuilder sb = new StringBuilder();
+        for (NewsSource source : sources) {
+            sb.append("• ").append(source.getName()).append("\n");
+        }
+        return sb.toString();
     }
     
     private void addTag(Long chatId, String tagName, TgUser user) {

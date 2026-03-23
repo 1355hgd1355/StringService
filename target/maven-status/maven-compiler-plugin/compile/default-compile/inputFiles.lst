@@ -4,8 +4,10 @@ C:\Users\Dmitry\Documents\GitHub\StringService\src\main\java\com\example\strings
 C:\Users\Dmitry\Documents\GitHub\StringService\src\main\java\com\example\stringservice\service\NotificationService.java
 C:\Users\Dmitry\Documents\GitHub\StringService\src\main\java\com\example\stringservice\repository\NewsSourceRepository.java
 C:\Users\Dmitry\Documents\GitHub\StringService\src\main\java\com\example\stringservice\service\NewsAggregatorService.java
+C:\Users\Dmitry\Documents\GitHub\StringService\src\main\java\com\example\stringservice\config\AsyncConfig.java
 C:\Users\Dmitry\Documents\GitHub\StringService\src\main\java\com\example\stringservice\model\SentNotification.java
 C:\Users\Dmitry\Documents\GitHub\StringService\src\main\java\com\example\stringservice\model\UserTagId.java
+C:\Users\Dmitry\Documents\GitHub\StringService\src\main\java\com\example\stringservice\config\TelegramBotConfig.java
 C:\Users\Dmitry\Documents\GitHub\StringService\src\main\java\com\example\stringservice\repository\TgUserRepository.java
 C:\Users\Dmitry\Documents\GitHub\StringService\src\main\java\com\example\stringservice\model\UserTag.java
 C:\Users\Dmitry\Documents\GitHub\StringService\src\main\java\com\example\stringservice\service\TagMatchingService.java

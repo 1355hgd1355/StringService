@@ -2,6 +2,8 @@ package com.example.stringservice.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "tg_users")
@@ -34,6 +36,10 @@ public class TgUser {
     
     @Column(name = "news_count")
     private Integer newsCount = 5;
+    
+    // Связь с UserTag
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<UserTag> userTags = new HashSet<>();
     
     // Конструкторы
     public TgUser() {}
@@ -118,6 +124,14 @@ public class TgUser {
     
     public void setNewsCount(Integer newsCount) {
         this.newsCount = newsCount;
+    }
+    
+    public Set<UserTag> getUserTags() {
+        return userTags;
+    }
+    
+    public void setUserTags(Set<UserTag> userTags) {
+        this.userTags = userTags;
     }
     
     @Override

@@ -18,7 +18,8 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
     
     List<Tag> findByNameContainingIgnoreCase(String name);
     
-    @Query("SELECT t FROM Tag t JOIN user_tags ut ON t.id = ut.tag.id WHERE ut.user.id = :userId")
+    // ПРАВИЛЬНЫЙ СПОСОБ - через связь userTags
+    @Query("SELECT t FROM Tag t JOIN t.userTags ut WHERE ut.user.id = :userId ORDER BY t.name")
     List<Tag> findByUserId(@Param("userId") Long userId);
     
     @Query("SELECT t FROM Tag t WHERE t.name IN :names")

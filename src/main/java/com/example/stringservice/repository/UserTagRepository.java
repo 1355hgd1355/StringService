@@ -15,10 +15,11 @@ import java.util.List;
 @Repository
 public interface UserTagRepository extends JpaRepository<UserTag, UserTagId> {
     
+    // ИСПРАВЛЕННЫЙ МЕТОД - используем JPQL с навигацией
     @Query("SELECT ut.tag FROM UserTag ut WHERE ut.user.id = :userId ORDER BY ut.tag.name")
     List<Tag> findTagsByUserId(@Param("userId") Long userId);
     
-    @Query("SELECT ut.user FROM UserTag ut WHERE ut.tag.id = :tagId")
+    @Query("SELECT ut.user.id FROM UserTag ut WHERE ut.tag.id = :tagId")
     List<Long> findUserIdsByTagId(@Param("tagId") Long tagId);
     
     @Query("SELECT COUNT(ut) > 0 FROM UserTag ut WHERE ut.user.id = :userId AND ut.tag.id = :tagId")
