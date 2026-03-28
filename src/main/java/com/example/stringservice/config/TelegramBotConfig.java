@@ -17,4 +17,11 @@ public class TelegramBotConfig {
         System.out.println("✅ Telegram бот успешно зарегистрирован!");
         return api;
     }
+    
+    // Альтернативный бин, который ничего не делает
+    @Bean
+    public String botDisabledMessage() {
+        System.out.println("⚠️ Telegram бот временно отключен из-за проблем с сетью");
+        return "bot-disabled";
+    }
 }

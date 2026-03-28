@@ -25,23 +25,17 @@ public interface UserSourceRepository extends JpaRepository<UserSource, UserSour
     @Query("SELECT COUNT(us) > 0 FROM UserSource us WHERE us.user.id = :userId AND us.source.id = :sourceId AND us.isEnabled = true")
     boolean existsByUserIdAndSourceIdAndIsEnabledTrue(@Param("userId") Long userId, @Param("sourceId") Long sourceId);
     
-    // Исправленный метод - сначала проверяет существование, потом обновляет или создаёт
     @Modifying
     @Transactional
     default void enableSource(Long userId, Long sourceId) {
         Optional<UserSource> existing = findByUserIdAndSourceId(userId, sourceId);
         
         if (existing.isPresent()) {
-            // Запись существует - обновляем
             UserSource userSource = existing.get();
             userSource.setIsEnabled(true);
             save(userSource);
         } else {
-            // Записи нет - создаём новую
-            UserSource newUserSource = new UserSource();
-            // Нужно получить сущности TgUser и NewsSource
-            // Для этого нужно передать их или использовать EntityManager
-            // Временно используем native query
+            // Используем native query вместо создания объекта
             enableSourceNative(userId, sourceId);
         }
     }

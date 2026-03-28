@@ -8,6 +8,7 @@ import com.rometools.rome.io.SyndFeedInput;
 import com.rometools.rome.io.XmlReader;
 import org.springframework.stereotype.Service;
 
+import java.net.URI;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -21,52 +22,50 @@ public class RssParserService {
         List<NewsItem> newsItems = new ArrayList<>();
         
         try {
-            URL feedUrl = new URL(source.getUrl());
+            // Используем URI вместо прямого создания URL
+            URI uri = new URI(source.getUrl());
+            URL feedUrl = uri.toURL();
+            
             SyndFeedInput input = new SyndFeedInput();
             
-            SyndFeed feed;
             try (java.io.InputStream inputStream = feedUrl.openStream()) {
-                feed = input.build(new XmlReader(inputStream));
-            }
-
-            List<SyndEntry> entries = feed.getEntries();
-            
-            // Берем только последние maxItems новостей
-            int count = 0;
-            for (SyndEntry entry : entries) {
-                if (count >= maxItems) break;
+                SyndFeed feed = input.build(new XmlReader(inputStream));
                 
-                NewsItem news = new NewsItem(); // Используем конструктор без параметров
-                news.setTitle(entry.getTitle());
-                news.setLink(entry.getLink());
+                List<SyndEntry> entries = feed.getEntries();
                 
-                // Описание (может быть HTML)
-                if (entry.getDescription() != null) {
-                    news.setContent(entry.getDescription().getValue());
+                int count = 0;
+                for (SyndEntry entry : entries) {
+                    if (count >= maxItems) break;
+                    
+                    NewsItem news = new NewsItem();
+                    news.setTitle(entry.getTitle());
+                    news.setLink(entry.getLink());
+                    
+                    if (entry.getDescription() != null) {
+                        news.setContent(entry.getDescription().getValue());
+                    }
+                    
+                    if (entry.getPublishedDate() != null) {
+                        news.setPublishedAt(entry.getPublishedDate().toInstant()
+                                .atZone(ZoneId.systemDefault()).toLocalDateTime());
+                    } else if (entry.getUpdatedDate() != null) {
+                        news.setPublishedAt(entry.getUpdatedDate().toInstant()
+                                .atZone(ZoneId.systemDefault()).toLocalDateTime());
+                    } else {
+                        news.setPublishedAt(LocalDateTime.now());
+                    }
+                    
+                    news.setFoundAt(LocalDateTime.now());
+                    
+                    if (entry.getUri() != null) {
+                        news.setGuid(entry.getUri());
+                    } else {
+                        news.setGuid(entry.getLink());
+                    }
+                    
+                    newsItems.add(news);
+                    count++;
                 }
-                
-                // Дата публикации
-                if (entry.getPublishedDate() != null) {
-                    news.setPublishedAt(entry.getPublishedDate().toInstant()
-                            .atZone(ZoneId.systemDefault()).toLocalDateTime());
-                } else if (entry.getUpdatedDate() != null) {
-                    news.setPublishedAt(entry.getUpdatedDate().toInstant()
-                            .atZone(ZoneId.systemDefault()).toLocalDateTime());
-                } else {
-                    news.setPublishedAt(LocalDateTime.now());
-                }
-                
-                news.setFoundAt(LocalDateTime.now());
-                
-                // GUID
-                if (entry.getUri() != null) {
-                    news.setGuid(entry.getUri());
-                } else {
-                    news.setGuid(entry.getLink());
-                }
-                
-                newsItems.add(news);
-                count++;
             }
             
         } catch (Exception e) {
