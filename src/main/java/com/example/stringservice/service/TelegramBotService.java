@@ -298,8 +298,6 @@ public class TelegramBotService extends TelegramLongPollingBot {
             
             sendText(chatId, "✅ Источник \"" + source.getName() + "\" успешно включён");
             
-            // Показываем обновлённый список
-            showSourcesMenu(chatId);
         } catch (Exception e) {
             sendText(chatId, "❌ Ошибка при включении источника: " + e.getMessage());
             e.printStackTrace();
@@ -322,8 +320,6 @@ public class TelegramBotService extends TelegramLongPollingBot {
             
             sendText(chatId, "❌ Источник \"" + source.getName() + "\" успешно выключен");
             
-            // Показываем обновлённый список
-            showSourcesMenu(chatId);
         } catch (Exception e) {
             sendText(chatId, "❌ Ошибка при выключении источника: " + e.getMessage());
             e.printStackTrace();
