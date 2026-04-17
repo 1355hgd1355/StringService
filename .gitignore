@@ -1,0 +1,20 @@
+# Секреты и конфиги
+.env
+application.properties
+application-*.properties
+
+# Скомпилированные файлы
+target/
+*.class
+
+# Логи
+*.log
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
