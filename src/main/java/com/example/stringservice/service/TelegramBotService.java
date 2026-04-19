@@ -187,16 +187,15 @@ public class TelegramBotService extends TelegramLongPollingBot {
     }
     
     private void showTagsMenu(Long chatId) {
-        List<Tag> allTags = tagRepository.findAll();
         Optional<TgUser> userOpt = userRepository.findByChatId(chatId);
-        
         if (userOpt.isEmpty()) return;
-        
+
         TgUser user = userOpt.get();
+
         List<Tag> userTags = tagRepository.findByUserId(user.getId());
-        
-        StringBuilder message = new StringBuilder("🏷 *Ваши теги:*\n\n");
-        
+
+        StringBuilder message = new StringBuilder("🏷️*Ваши персональные теги:*\n\n");
+
         if (userTags.isEmpty()) {
             message.append("У вас пока нет тегов\n\n");
         } else {
@@ -205,18 +204,12 @@ public class TelegramBotService extends TelegramLongPollingBot {
             }
             message.append("\n");
         }
-        
-        message.append("*Доступные теги:*\n");
-        for (Tag tag : allTags) {
-            if (!userTags.contains(tag)) {
-                message.append("⚪️ ").append(tag.getName()).append("\n");
-            }
-        }
-        
-        message.append("\nЧтобы добавить тег: `добавить тег Название`\n");
-        message.append("Чтобы удалить тег: `удалить тег Название`\n");
-        message.append("Чтобы создать новый тег: `новый тег Название`");
-        
+
+        message.append("*Управление тегами:*");
+        message.append("`добавить тег Название` - добавить тег\n");
+        message.append("`удалить тег Название` - удалить тег\n");
+        message.append("`очистить теги` - удалить все теги");
+
         sendText(chatId, message.toString());
     }
     
@@ -271,8 +264,8 @@ public class TelegramBotService extends TelegramLongPollingBot {
             addTag(chatId, message.substring(13).trim(), user);
         } else if (message.startsWith("удалить тег ")) {
             removeTag(chatId, message.substring(12).trim(), user);
-        } else if (message.startsWith("новый тег ")) {
-            createNewTag(chatId, message.substring(10).trim(), user);
+        } else if (message.startsWith("очистить теги")) {
+            clearTags(chatId, user);
         } else if (message.startsWith("интервал ")) {
             setInterval(chatId, message.substring(9).trim(), user);
         } else if (message.startsWith("количество ")) {
@@ -336,57 +329,66 @@ public class TelegramBotService extends TelegramLongPollingBot {
     }
     
     private void addTag(Long chatId, String tagName, TgUser user) {
-        Optional<Tag> tag = tagRepository.findByNameIgnoreCase(tagName);
-        
-        if (tag.isEmpty()) {
-            sendText(chatId, "Тег \"" + tagName + "\" не найден. Создайте его командой `новый тег " + tagName + "`");
+        boolean tagExists = userTagRepository.existsByUserIdAndTagName(user.getId(), tagName);
+
+        if (tagExists) {
+            sendText(chatId, "ℹ️ Тег \"" + tagName + "\" уже есть в вашем списке");
             return;
         }
-        
-        if (userTagRepository.existsByUserIdAndTagId(user.getId(), tag.get().getId())) {
-            sendText(chatId, "Тег \"" + tag.get().getName() + "\" уже добавлен");
-            return;
-        }
-        
-        UserTag userTag = new UserTag();
-        userTag.setUser(user);
-        userTag.setTag(tag.get());
-        userTag.setCreatedAt(LocalDateTime.now());
-        userTagRepository.save(userTag);
-        
-        sendText(chatId, "✅ Тег \"" + tag.get().getName() + "\" добавлен");
-    }
-    
-    private void removeTag(Long chatId, String tagName, TgUser user) {
-        Optional<Tag> tag = tagRepository.findByNameIgnoreCase(tagName);
-        
-        if (tag.isEmpty()) {
-            sendText(chatId, "Тег \"" + tagName + "\" не найден");
-            return;
-        }
-        
-        userTagRepository.deleteByUserIdAndTagId(user.getId(), tag.get().getId());
-        sendText(chatId, "❌ Тег \"" + tag.get().getName() + "\" удалён");
-    }
-    
-    private void createNewTag(Long chatId, String tagName, TgUser user) {
-        if (tagRepository.existsByNameIgnoreCase(tagName)) {
-            sendText(chatId, "Тег \"" + tagName + "\" уже существует");
-            return;
-        }
-        
+
         Tag newTag = new Tag();
         newTag.setName(tagName);
         newTag.setCreatedAt(LocalDateTime.now());
         tagRepository.save(newTag);
-        
+
         UserTag userTag = new UserTag();
         userTag.setUser(user);
         userTag.setTag(newTag);
         userTag.setCreatedAt(LocalDateTime.now());
         userTagRepository.save(userTag);
-        
-        sendText(chatId, "✅ Создан и добавлен новый тег: \"" + tagName + "\"");
+
+        sendText(chatId, "✅ Тег \"" + tagName + "\" добавлен в ваш список");
+    }
+    
+    private void removeTag(Long chatId, String tagName, TgUser user) {
+        Optional<UserTag> userTagOpt = userTagRepository.findByUserIdAndTagName(user.getId(), tagName);
+
+        if (userTagOpt.isEmpty()) {
+            sendText(chatId, "❌ Тег \"" + tagName + "\" не найден в вашем списке");
+            return;
+        }
+
+        UserTag userTag = userTagOpt.get();
+        Tag tag = userTag.getTag();
+
+        userTagRepository.delete(userTag);
+
+        boolean otherUsersUseTag = userTagRepository.existsByTagId(tag.getId());
+
+        if (!otherUsersUseTag) {
+            tagRepository.delete(tag);
+        }
+        sendText(chatId, "✅ Тег \"" + tagName + "\" удалён из вашего списка");
+    }
+
+    private void clearTags(Long chatId, TgUser user) {
+        List<UserTag> userTags = userTagRepository.findAllByUserId(user.getId());
+
+        if (userTags.isEmpty()) {
+            sendText(chatId, "ℹ️ У вас нет тегов для удаления");
+            return;
+        }
+
+        for (UserTag userTag : userTags) {
+            Tag tag = userTag.getTag();
+            userTagRepository.delete(userTag);
+
+            boolean otherUsersUseTag = userTagRepository.existsByTagId(tag.getId());
+
+            if (!otherUsersUseTag) {tagRepository.delete(tag);}
+        }
+
+        sendText(chatId, "✅ Все ваши теги удалены");
     }
     
     private void setInterval(Long chatId, String intervalStr, TgUser user) {

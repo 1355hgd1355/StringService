@@ -11,13 +11,21 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface UserTagRepository extends JpaRepository<UserTag, UserTagId> {
     
-    // ИСПРАВЛЕННЫЙ МЕТОД - используем JPQL с навигацией
     @Query("SELECT ut.tag FROM UserTag ut WHERE ut.user.id = :userId ORDER BY ut.tag.name")
     List<Tag> findTagsByUserId(@Param("userId") Long userId);
+
+    Optional<UserTag> findByUserIdAndTagName(Long userId, String tagName);
+
+    boolean existsByUserIdAndTagName(Long userId, String tagName);
+
+    List<UserTag> findAllByUserId(Long userId);
+
+    boolean existsByTagId(Long tagId);
     
     @Query("SELECT ut.user.id FROM UserTag ut WHERE ut.tag.id = :tagId")
     List<Long> findUserIdsByTagId(@Param("tagId") Long tagId);
