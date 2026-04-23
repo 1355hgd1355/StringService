@@ -205,7 +205,7 @@ public class TelegramBotService extends TelegramLongPollingBot {
             message.append("\n");
         }
 
-        message.append("*Управление тегами:*");
+        message.append("*Управление тегами:*\n");
         message.append("`добавить тег Название` - добавить тег\n");
         message.append("`удалить тег Название` - удалить тег\n");
         message.append("`очистить теги` - удалить все теги");
