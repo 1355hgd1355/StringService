@@ -13,6 +13,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import jakarta.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -379,13 +380,16 @@ public class TelegramBotService extends TelegramLongPollingBot {
             return;
         }
 
+        List<Long> tagIdsToDelete = new ArrayList<>();
         for (UserTag userTag : userTags) {
-            Tag tag = userTag.getTag();
-            userTagRepository.delete(userTag);
+            tagIdsToDelete.add(userTag.getTag().getId());
+        }
 
-            boolean otherUsersUseTag = userTagRepository.existsByTagId(tag.getId());
+        userTagRepository.deleteAllByUserId(user.getId());
 
-            if (!otherUsersUseTag) {tagRepository.delete(tag);}
+        for (Long tagId : tagIdsToDelete) {
+            boolean otherUsersUseTag = userTagRepository.existsByTagId(tagId);
+            if (!otherUsersUseTag) {tagRepository.deleteById(tagId);}
         }
 
         sendText(chatId, "✅ Все ваши теги удалены");
